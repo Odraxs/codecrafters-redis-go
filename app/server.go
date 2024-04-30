@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	// Uncomment this block to pass the first stage
 	"net"
 	"os"
@@ -25,26 +26,30 @@ func main() {
 			os.Exit(1)
 		}
 
-		go handleClient(conn)
+		go func() {
+			err := handleClient(conn)
+			if err != nil {
+				log.Printf("something happened with the client %s connection, err: %s\n",
+					conn.LocalAddr().String(), err.Error())
+			}
+		}()
 	}
 }
 
-func handleClient(conn net.Conn) {
+func handleClient(conn net.Conn) error {
 	defer conn.Close()
 
 	for {
 		buffer := make([]byte, 128)
 		_, err := conn.Read(buffer)
 		if err != nil {
-			fmt.Printf("Failed to read connection data, error: %v\n", err.Error())
-			os.Exit(1)
+			return fmt.Errorf("failed to read connection data, error: %w", err)
 		}
 
 		pingMsg := []byte("+PONG\r\n")
 		_, err = conn.Write(pingMsg)
 		if err != nil {
-			fmt.Printf("Failed to write ping message, error: %v\n", err.Error())
-			os.Exit(1)
+			return fmt.Errorf("failed to write ping message, error: %w", err)
 		}
 	}
 }
