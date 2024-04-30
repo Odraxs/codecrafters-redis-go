@@ -25,25 +25,26 @@ func main() {
 			os.Exit(1)
 		}
 
-		handleClient(conn)
+		go handleClient(conn)
 	}
 }
 
 func handleClient(conn net.Conn) {
 	defer conn.Close()
 
-	buffer := make([]byte, 128)
-	msg, err := conn.Read(buffer)
-	if err != nil {
-		fmt.Printf("Failed to read connection data, error: %v\n", err.Error())
-		os.Exit(1)
-	}
-	fmt.Printf("Message: %s \n", string(buffer[:msg]))
+	for {
+		buffer := make([]byte, 128)
+		_, err := conn.Read(buffer)
+		if err != nil {
+			fmt.Printf("Failed to read connection data, error: %v\n", err.Error())
+			os.Exit(1)
+		}
 
-	pingMsg := []byte("+PONG\r\n")
-	_, err = conn.Write(pingMsg)
-	if err != nil {
-		fmt.Printf("Failed to write ping message, error: %v\n", err.Error())
-		os.Exit(1)
+		pingMsg := []byte("+PONG\r\n")
+		_, err = conn.Write(pingMsg)
+		if err != nil {
+			fmt.Printf("Failed to write ping message, error: %v\n", err.Error())
+			os.Exit(1)
+		}
 	}
 }
