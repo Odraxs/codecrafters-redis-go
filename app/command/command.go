@@ -12,6 +12,7 @@ const (
 	Echo = "echo"
 	Set  = "set"
 	Get  = "get"
+	Px  = "px"
 )
 
 const (
