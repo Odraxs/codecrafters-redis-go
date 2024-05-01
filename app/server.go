@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
-	// Uncomment this block to pass the first stage
 	"net"
 	"os"
+	"strings"
+
+	"github.com/codecrafters-io/redis-starter-go/app/command"
 )
 
 func main() {
@@ -39,17 +42,27 @@ func main() {
 func handleClient(conn net.Conn) error {
 	defer conn.Close()
 
+	reader := bufio.NewReader(conn)
+	writer := bufio.NewWriter(conn)
+
 	for {
-		buffer := make([]byte, 128)
-		_, err := conn.Read(buffer)
+		userCommand, err := command.NewCommand(reader)
 		if err != nil {
-			return fmt.Errorf("failed to read connection data, error: %w", err)
+			return fmt.Errorf("failed to read command, error: %w", err)
 		}
 
-		pingMsg := []byte("+PONG\r\n")
-		_, err = conn.Write(pingMsg)
-		if err != nil {
-			return fmt.Errorf("failed to write ping message, error: %w", err)
+		instruction := strings.ToLower(userCommand.Args[0])
+		switch instruction {
+		case command.Ping:
+			pingMsg := []byte("+PONG\r\n")
+			writer.Write(pingMsg)
+		case command.Echo:
+			if userCommand.Size < 2 {
+				return fmt.Errorf("%s command requires an argument", strings.ToUpper(command.Echo))
+			}
+			arg := userCommand.Args[1]
+			writer.WriteString(fmt.Sprintf("$%d\r\n%s\r\n", len(arg), arg))
 		}
+		writer.Flush()
 	}
 }
