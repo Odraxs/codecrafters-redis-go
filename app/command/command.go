@@ -12,8 +12,13 @@ const (
 	Echo = "echo"
 	Set  = "set"
 	Get  = "get"
+	Info = "info"
 	Px   = "px"
 	Port = "--port"
+)
+
+const (
+	Replication = "replication"
 )
 
 const (
