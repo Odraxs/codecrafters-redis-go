@@ -7,12 +7,14 @@ import (
 	"strings"
 
 	"github.com/codecrafters-io/redis-starter-go/app/command"
+	"github.com/codecrafters-io/redis-starter-go/app/server/config"
 	"github.com/codecrafters-io/redis-starter-go/app/storage"
 )
 
 type Handler struct {
 	db         *storage.Storage
 	connection net.Conn
+	cfg        *config.Config
 	reader     *bufio.Reader
 	writer     *bufio.Writer
 }
@@ -25,10 +27,11 @@ var commandHandlers = map[string]func(*Handler, *command.Command) error{
 	command.Info: handleInfo,
 }
 
-func NewHandler(conn net.Conn, db *storage.Storage) *Handler {
+func NewHandler(conn net.Conn, db *storage.Storage, cfg *config.Config) *Handler {
 	return &Handler{
 		db:         db,
 		connection: conn,
+		cfg:        cfg,
 		reader:     bufio.NewReader(conn),
 		writer:     bufio.NewWriter(conn),
 	}

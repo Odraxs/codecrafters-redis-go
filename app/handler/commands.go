@@ -56,6 +56,7 @@ func handleSet(h *Handler, userCommand *command.Command) error {
 			return fmt.Errorf("the command %s only allows the %s as a complimenting command",
 				strings.ToUpper(command.Set), strings.ToUpper(command.Px))
 		}
+
 		time := userCommand.Args[4]
 		var err error
 		expTime, err = strconv.Atoi(time)
@@ -77,12 +78,13 @@ func handleInfo(h *Handler, userCommand *command.Command) error {
 	case command.Replication:
 		info := strings.Join(
 			[]string{
-				"role:master",
+				fmt.Sprintf("role:%s", h.cfg.Role()),
 				"master_replid:id1",
 			},
 			"\n",
 		)
 		h.writer.WriteString(command.NewBulkString(info))
 	}
+
 	return nil
 }
