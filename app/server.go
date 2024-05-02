@@ -6,6 +6,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/codecrafters-io/redis-starter-go/app/command"
+	"github.com/codecrafters-io/redis-starter-go/app/config"
 	"github.com/codecrafters-io/redis-starter-go/app/handler"
 	"github.com/codecrafters-io/redis-starter-go/app/storage"
 )
@@ -13,9 +15,16 @@ import (
 func main() {
 	fmt.Println("Logs from your program will appear here!")
 
-	l, err := net.Listen("tcp", "0.0.0.0:6379")
+	var options []config.Option
+	port := findPort()
+	if port != "" {
+		options = append(options, config.WithPort(port))
+	}
+	cfg := config.NewConfig(options...)
+
+	l, err := net.Listen("tcp", "0.0.0.0:"+cfg.Port())
 	if err != nil {
-		fmt.Println("Failed to bind to port 6379")
+		fmt.Printf("Failed to bind to port %s\n", cfg.Port())
 		os.Exit(1)
 	}
 	defer l.Close()
@@ -40,4 +49,15 @@ func main() {
 			}
 		}()
 	}
+}
+
+func findPort() string {
+	args := os.Args[1:]
+
+	for i, arg := range args {
+		if arg == command.Port && len(args) > i {
+			return args[i+1]
+		}
+	}
+	return ""
 }

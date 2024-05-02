@@ -12,7 +12,8 @@ const (
 	Echo = "echo"
 	Set  = "set"
 	Get  = "get"
-	Px  = "px"
+	Px   = "px"
+	Port = "--port"
 )
 
 const (
