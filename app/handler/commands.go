@@ -79,7 +79,8 @@ func handleInfo(h *Handler, userCommand *command.Command) error {
 		info := strings.Join(
 			[]string{
 				fmt.Sprintf("role:%s", h.cfg.Role()),
-				"master_replid:id1",
+				fmt.Sprintf("master_replid:%s", h.cfg.ReplID()),
+				fmt.Sprintf("master_repl_offset:%d", h.cfg.ReplOffset()),
 			},
 			"\n",
 		)

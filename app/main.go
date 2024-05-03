@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
+	"strings"
 
-	"github.com/codecrafters-io/redis-starter-go/app/command"
-	"github.com/codecrafters-io/redis-starter-go/app/server/config"
 	"github.com/codecrafters-io/redis-starter-go/app/server"
+	"github.com/codecrafters-io/redis-starter-go/app/server/config"
 	"github.com/codecrafters-io/redis-starter-go/app/storage"
+)
+
+var (
+	portMatch    = regexp.MustCompile(`--port\s+\d+`)
+	replicaMatch = regexp.MustCompile(`--replicaof\s+.+\s\d+`)
 )
 
 func main() {
@@ -29,15 +35,18 @@ func main() {
 // Looks for cmdOptions passed by the user to start the server
 func setServerOptions() []config.Option {
 	var options []config.Option
-	cmdOptions := os.Args[1:]
+	cmdOptions := strings.Join(os.Args[1:], " ")
 
-	for i, opt := range cmdOptions {
-		if opt == command.Port && len(cmdOptions) > i {
-			options = append(options, config.WithPort(cmdOptions[i+1]))
-		}
-		if opt == command.Replica && len(cmdOptions) > i {
-			options = append(options, config.WithSlave(cmdOptions[i+1]))
-		}
+	if params := portMatch.FindStringSubmatch(cmdOptions); len(params) == 1 {
+		port := strings.Split(params[0], " ")[1]
+		options = append(options, config.WithPort(port))
 	}
+
+	if params := replicaMatch.FindStringSubmatch(cmdOptions); len(params) == 1 {
+		data := strings.Split(params[0], "")[1:]
+		master := fmt.Sprintf("%s %s", data[2], data[3])
+		options = append(options, config.WithSlave(master))
+	}
+
 	return options
 }

@@ -14,8 +14,6 @@ const (
 	Get     = "get"
 	Info    = "info"
 	Px      = "px"
-	Port    = "--port"
-	Replica = "--replicaof"
 )
 
 const (
