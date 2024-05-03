@@ -20,11 +20,12 @@ type Handler struct {
 }
 
 var commandHandlers = map[string]func(*Handler, *command.Command) error{
-	command.Ping: handlePing,
-	command.Echo: handleEcho,
-	command.Get:  handleGet,
-	command.Set:  handleSet,
-	command.Info: handleInfo,
+	command.Ping:     handlePing,
+	command.Echo:     handleEcho,
+	command.Get:      handleGet,
+	command.Set:      handleSet,
+	command.Info:     handleInfo,
+	command.Replconf: handleReplconf,
 }
 
 func NewHandler(conn net.Conn, db *storage.Storage, cfg *config.Config) *Handler {
@@ -59,9 +60,33 @@ func (h *Handler) Handshake() error {
 	h.writer.WriteString(command.NewArray([]string{"PING"}))
 	h.writer.Flush()
 
-	_, err := h.reader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("failed to get master response, error: %w", err)
+	response, err := h.reader.ReadString('\n')
+	if err != nil || response != command.Pong {
+		return fmt.Errorf("invalid master response")
+	}
+
+	h.writer.WriteString(command.NewArray([]string{
+		"REPLCONF",
+		"listening-port",
+		h.cfg.Port(),
+	}))
+	h.writer.Flush()
+
+	response, err = h.reader.ReadString('\n')
+	if err != nil || response != command.Ok {
+		return fmt.Errorf("invalid master response")
+	}
+
+	h.writer.WriteString(command.NewArray([]string{
+		"REPLCONF",
+		"capa",
+		"psync2",
+	}))
+	h.writer.Flush()
+
+	response, err = h.reader.ReadString('\n')
+	if err != nil || response != command.Ok {
+		return fmt.Errorf("invalid master response")
 	}
 
 	return nil

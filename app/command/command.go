@@ -8,12 +8,13 @@ import (
 )
 
 const (
-	Ping    = "ping"
-	Echo    = "echo"
-	Set     = "set"
-	Get     = "get"
-	Info    = "info"
-	Px      = "px"
+	Ping     = "ping"
+	Echo     = "echo"
+	Set      = "set"
+	Get      = "get"
+	Info     = "info"
+	Replconf = "replconf"
+	Px       = "px"
 )
 
 const (

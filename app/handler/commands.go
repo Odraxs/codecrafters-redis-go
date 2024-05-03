@@ -89,3 +89,8 @@ func handleInfo(h *Handler, userCommand *command.Command) error {
 
 	return nil
 }
+
+func handleReplconf(h *Handler, _ *command.Command) error {
+	h.writer.WriteString(command.Ok)
+	return nil
+}
