@@ -94,3 +94,10 @@ func handleReplconf(h *Handler, _ *command.Command) error {
 	h.writer.WriteString(command.Ok)
 	return nil
 }
+
+func handlePsync(h *Handler, _ *command.Command) error {
+	h.writer.WriteString(
+		fmt.Sprintf("%s %s", command.NewString(command.Fullsync), "<REPL_ID> 0"),
+	)
+	return nil
+}

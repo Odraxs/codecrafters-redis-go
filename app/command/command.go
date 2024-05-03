@@ -14,6 +14,7 @@ const (
 	Get      = "get"
 	Info     = "info"
 	Replconf = "replconf"
+	Psync    = "psync"
 	Px       = "px"
 )
 

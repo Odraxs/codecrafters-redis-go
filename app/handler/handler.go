@@ -26,6 +26,7 @@ var commandHandlers = map[string]func(*Handler, *command.Command) error{
 	command.Set:      handleSet,
 	command.Info:     handleInfo,
 	command.Replconf: handleReplconf,
+	command.Psync:    handlePsync,
 }
 
 func NewHandler(conn net.Conn, db *storage.Storage, cfg *config.Config) *Handler {
@@ -62,11 +63,11 @@ func (h *Handler) Handshake() error {
 
 	response, err := h.reader.ReadString('\n')
 	if err != nil || response != command.Pong {
-		return fmt.Errorf("invalid master response")
+		return fmt.Errorf("incorrect master response")
 	}
 
 	h.writer.WriteString(command.NewArray([]string{
-		"REPLCONF",
+		command.Replconf,
 		"listening-port",
 		h.cfg.Port(),
 	}))
@@ -74,11 +75,11 @@ func (h *Handler) Handshake() error {
 
 	response, err = h.reader.ReadString('\n')
 	if err != nil || response != command.Ok {
-		return fmt.Errorf("invalid master response")
+		return fmt.Errorf("incorrect master response")
 	}
 
 	h.writer.WriteString(command.NewArray([]string{
-		"REPLCONF",
+		command.Replconf,
 		"capa",
 		"psync2",
 	}))
@@ -86,7 +87,19 @@ func (h *Handler) Handshake() error {
 
 	response, err = h.reader.ReadString('\n')
 	if err != nil || response != command.Ok {
-		return fmt.Errorf("invalid master response")
+		return fmt.Errorf("incorrect master response")
+	}
+
+	h.writer.WriteString(command.NewArray([]string{
+		command.Psync,
+		"?",
+		"-1",
+	}))
+	h.writer.Flush()
+
+	response, err = h.reader.ReadString('\n')
+	if err != nil || strings.Split(response, " ")[0] != command.Fullsync {
+		return fmt.Errorf("incorrect master response")
 	}
 
 	return nil

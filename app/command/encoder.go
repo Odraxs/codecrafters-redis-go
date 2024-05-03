@@ -3,9 +3,10 @@ package command
 import "fmt"
 
 const (
-	Null = "$-1\r\n"
-	Ok   = "+OK\r\n"
-	Pong = "+PONG\r\n"
+	Null     = "$-1\r\n"
+	Ok       = "+OK\r\n"
+	Pong     = "+PONG\r\n"
+	Fullsync = "+FULLRESYNC"
 )
 
 func NewString(data string) string {
