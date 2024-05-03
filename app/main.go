@@ -26,8 +26,15 @@ func main() {
 	db := storage.NewStorage()
 	server := server.NewServer(cfg, db)
 
+	if cfg.Role() == config.RoleSlave {
+		if err := server.Handshake(); err != nil {
+			log.Printf("failed handshake to %s, error: %s", cfg.ReplicaOf(), err.Error())
+			os.Exit(1)
+		}
+	}
+
 	if err := server.Start(); err != nil {
-		log.Println("failed to start the server: %w\n", err)
+		log.Printf("failed to start the server: %s\n", err.Error())
 		os.Exit(1)
 	}
 }
@@ -43,8 +50,8 @@ func setServerOptions() []config.Option {
 	}
 
 	if params := replicaMatch.FindStringSubmatch(cmdOptions); len(params) == 1 {
-		data := strings.Split(params[0], "")[1:]
-		master := fmt.Sprintf("%s %s", data[2], data[3])
+		data := strings.Split(params[0], " ")[1:]
+		master := fmt.Sprintf("%s:%s", data[0], data[1])
 		options = append(options, config.WithSlave(master))
 	}
 

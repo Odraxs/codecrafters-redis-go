@@ -5,8 +5,8 @@ import (
 	"log"
 	"net"
 
-	"github.com/codecrafters-io/redis-starter-go/app/server/config"
 	"github.com/codecrafters-io/redis-starter-go/app/handler"
+	"github.com/codecrafters-io/redis-starter-go/app/server/config"
 	"github.com/codecrafters-io/redis-starter-go/app/storage"
 )
 
@@ -37,14 +37,29 @@ func (s *Server) Start() error {
 			continue
 		}
 
-		storageHandler := handler.NewHandler(conn, s.db, s.cfg)
+		connHandler := handler.NewHandler(conn, s.db, s.cfg)
 
 		go func() {
-			err := storageHandler.HandleClient()
+			err := connHandler.HandleClient()
 			if err != nil {
 				log.Printf("something happened with the client %s connection, err: %s\n",
 					conn.LocalAddr().String(), err.Error())
 			}
 		}()
 	}
+}
+
+func (s *Server) Handshake() error {
+	conn, err := net.Dial("tcp", s.cfg.ReplicaOf())
+	if err != nil {
+		return fmt.Errorf("failed to dial with master error: %w", err)
+	}
+	defer conn.Close()
+
+	connHandler := handler.NewHandler(conn, s.db, s.cfg)
+	if err := connHandler.Handshake(); err != nil {
+		return fmt.Errorf("failed to handshake, error: %w", err)
+	}
+
+	return nil
 }

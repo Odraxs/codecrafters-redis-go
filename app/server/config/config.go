@@ -6,8 +6,14 @@ import (
 )
 
 const (
-	charset    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	replIDSize = 40
+	charset     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	replIDSize  = 40
+	defaultPort = "6379"
+)
+
+const (
+	RoleMaster = "master"
+	RoleSlave  = "slave"
 )
 
 var seededRand *rand.Rand = rand.New(
@@ -25,8 +31,8 @@ type Option func(c *Config)
 
 func NewConfig(options ...Option) *Config {
 	config := &Config{
-		port:       "6379",
-		role:       "master",
+		port:       defaultPort,
+		role:       RoleMaster,
 		replID:     generateReplicationID(),
 		replOffset: 0,
 	}
@@ -54,6 +60,10 @@ func (c *Config) ReplOffset() int {
 	return c.replOffset
 }
 
+func (c *Config) ReplicaOf() string {
+	return c.replicaOf
+}
+
 func WithPort(port string) Option {
 	return func(c *Config) {
 		c.port = port
@@ -62,7 +72,7 @@ func WithPort(port string) Option {
 
 func WithSlave(master string) Option {
 	return func(c *Config) {
-		c.role = "slave"
+		c.role = RoleSlave
 		c.replicaOf = master
 	}
 }

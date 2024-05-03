@@ -55,6 +55,18 @@ func (h *Handler) HandleClient() error {
 	}
 }
 
+func (h *Handler) Handshake() error {
+	h.writer.WriteString(command.NewArray([]string{"PING"}))
+	h.writer.Flush()
+
+	_, err := h.reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("failed to get master response, error: %w", err)
+	}
+
+	return nil
+}
+
 func (h *Handler) handleCommand(userCommand *command.Command) error {
 	instruction := strings.ToLower(userCommand.Args[0])
 	handler, exist := commandHandlers[instruction]
