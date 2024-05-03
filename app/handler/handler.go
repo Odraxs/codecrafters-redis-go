@@ -98,7 +98,8 @@ func (h *Handler) Handshake() error {
 	h.writer.Flush()
 
 	response, err = h.reader.ReadString('\n')
-	if err != nil || strings.Split(response, " ")[0] != command.Fullsync {
+	responseCommand := strings.Split(response, " ")[0]
+	if err != nil || responseCommand != "+"+command.Fullsync {
 		return fmt.Errorf("incorrect master response")
 	}
 

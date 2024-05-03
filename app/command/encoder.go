@@ -6,7 +6,7 @@ const (
 	Null     = "$-1\r\n"
 	Ok       = "+OK\r\n"
 	Pong     = "+PONG\r\n"
-	Fullsync = "+FULLRESYNC"
+	Fullsync = "FULLRESYNC"
 )
 
 func NewString(data string) string {
