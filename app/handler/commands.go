@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/codecrafters-io/redis-starter-go/app/command"
+	"github.com/codecrafters-io/redis-starter-go/rdb"
 )
 
 func handlePing(h *Handler, _ *command.Command) error {
@@ -98,8 +99,15 @@ func handleReplconf(h *Handler, _ *command.Command) error {
 func handlePsync(h *Handler, _ *command.Command) error {
 	h.writer.WriteString(
 		command.NewString(
-			fmt.Sprintf("%s %s", command.Fullsync, "REPL_ID 0"),
+			fmt.Sprintf("%s %s %d", command.Fullsync, "REPL_ID", 0),
 		),
 	)
+
+	dbData, err := rdb.GetRDBContent()
+	if err != nil {
+		return fmt.Errorf("failed to read rdb file, error: %w", err)
+	}
+	h.writer.WriteString(command.NewRDBFile(dbData))
+
 	return nil
 }

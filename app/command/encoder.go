@@ -25,3 +25,7 @@ func NewArray(data []string) string {
 
 	return array
 }
+
+func NewRDBFile(fileContent []byte) string {
+	return fmt.Sprintf("$%d\r\n%s", len(fileContent), fileContent)
+}
