@@ -18,7 +18,7 @@ var (
 )
 
 func main() {
-	fmt.Println("Logs from your program will appear here!")
+	log.Println("Logs from your program will appear here!")
 
 	cmdOptions := setServerOptions()
 

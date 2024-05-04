@@ -103,6 +103,12 @@ func (h *Handler) Handshake() error {
 		return fmt.Errorf("incorrect master response")
 	}
 
+	// Skip RDB file
+	_, err = h.reader.ReadBytes(162)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -39,13 +39,7 @@ func (s *Server) Start() error {
 
 		connHandler := handler.NewHandler(conn, s.db, s.cfg)
 
-		go func() {
-			err := connHandler.HandleClient()
-			if err != nil {
-				log.Printf("something happened with the client %s connection, err: %s\n",
-					conn.LocalAddr().String(), err.Error())
-			}
-		}()
+		go s.serveConnection(connHandler)
 	}
 }
 
@@ -54,12 +48,20 @@ func (s *Server) Handshake() error {
 	if err != nil {
 		return fmt.Errorf("failed to dial with master error: %w", err)
 	}
-	defer conn.Close()
 
 	connHandler := handler.NewHandler(conn, s.db, s.cfg)
 	if err := connHandler.Handshake(); err != nil {
 		return fmt.Errorf("failed to handshake, error: %w", err)
 	}
 
+	go s.serveConnection(connHandler)
+
 	return nil
+}
+
+func (s *Server) serveConnection(connHandler *handler.Handler) {
+	err := connHandler.HandleClient()
+	if err != nil {
+		log.Printf("something happened with the client connection, err: %s\n", err.Error())
+	}
 }

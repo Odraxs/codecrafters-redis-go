@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bufio"
 	"net"
 	"sync"
 
@@ -19,9 +20,13 @@ func NewSlave(conn net.Conn) *Slave {
 	}
 }
 
-func (si *Slave) PropagateCommand(args []string) {
+func (sl *Slave) PropagateCommand(args []string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	command := command.NewArray(args)
-	si.lock.Lock()
-	si.conn.Write([]byte(command))
-	si.lock.Unlock()
+
+	sl.lock.Lock()
+	writer := bufio.NewWriter(sl.conn)
+	writer.WriteString(command)
+	writer.Flush()
+	sl.lock.Unlock()
 }

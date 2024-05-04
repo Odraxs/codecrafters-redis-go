@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/codecrafters-io/redis-starter-go/app/command"
 	"github.com/codecrafters-io/redis-starter-go/app/server/config"
@@ -69,12 +70,15 @@ func handleSet(h *Handler, userCommand *command.Command) error {
 
 	h.db.Set(key, value, expTime)
 	if h.cfg.Role() == config.RoleMaster {
+		wg := sync.WaitGroup{}
 		for _, slave := range h.cfg.Slaves() {
-			go slave.PropagateCommand(userCommand.Args)
+			wg.Add(1)
+			go slave.PropagateCommand(userCommand.Args, &wg)
 		}
+		wg.Wait()
+		h.writer.WriteString(command.Ok)
 	}
 
-	h.writer.WriteString(command.Ok)
 	return nil
 }
 
