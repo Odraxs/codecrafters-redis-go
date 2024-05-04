@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/codecrafters-io/redis-starter-go/app/command"
+	"github.com/codecrafters-io/redis-starter-go/app/server/config"
 	"github.com/codecrafters-io/redis-starter-go/rdb"
 )
 
@@ -67,6 +68,12 @@ func handleSet(h *Handler, userCommand *command.Command) error {
 	}
 
 	h.db.Set(key, value, expTime)
+	if h.cfg.Role() == config.RoleMaster {
+		for _, slave := range h.cfg.Slaves() {
+			go slave.PropagateCommand(userCommand.Args)
+		}
+	}
+
 	h.writer.WriteString(command.Ok)
 	return nil
 }
@@ -109,5 +116,7 @@ func handlePsync(h *Handler, _ *command.Command) error {
 	}
 	h.writer.WriteString(command.NewRDBFile(dbData))
 
+	slave := config.NewSlave(h.connection)
+	h.cfg.AddSlave(slave)
 	return nil
 }

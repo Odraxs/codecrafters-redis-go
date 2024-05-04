@@ -25,6 +25,7 @@ type Config struct {
 	replicaOf  string
 	replID     string
 	replOffset int
+	slaves     []*Slave
 }
 
 type Option func(c *Config)
@@ -35,6 +36,7 @@ func NewConfig(options ...Option) *Config {
 		role:       RoleMaster,
 		replID:     generateReplicationID(),
 		replOffset: 0,
+		slaves:     []*Slave{},
 	}
 
 	for _, opt := range options {
@@ -62,6 +64,14 @@ func (c *Config) ReplOffset() int {
 
 func (c *Config) ReplicaOf() string {
 	return c.replicaOf
+}
+
+func (c *Config) Slaves() []*Slave {
+	return c.slaves
+}
+
+func (c *Config) AddSlave(slave *Slave) {
+	c.slaves = append(c.slaves, slave)
 }
 
 func WithPort(port string) Option {
