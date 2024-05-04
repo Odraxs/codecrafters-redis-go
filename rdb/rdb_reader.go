@@ -5,14 +5,9 @@ import (
 	"os"
 )
 
-const rdbFile = "data.txt"
+const rdbFile = "rdb/data.txt"
 
 func GetRDBContent() ([]byte, error) {
-	err := os.Chdir("rdb")
-	if err != nil {
-		return nil, err
-	}
-
 	content, err := os.ReadFile(rdbFile)
 	if err != nil {
 		return nil, err
