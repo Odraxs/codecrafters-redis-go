@@ -20,6 +20,8 @@ const (
 
 const (
 	Replication = "replication"
+	GetAck      = "getack"
+	Ack         = "ack"
 )
 
 const (
@@ -30,7 +32,7 @@ const (
 
 type Command struct {
 	Args []string
-	Size uint
+	Size int
 }
 
 func NewCommand(reader *bufio.Reader) (*Command, error) {
@@ -39,61 +41,60 @@ func NewCommand(reader *bufio.Reader) (*Command, error) {
 		return nil, err
 	}
 
+	command := &Command{
+		Size: len([]byte(line)),
+	}
 	line = strings.TrimSpace(line)
-	var command *Command
 
 	switch line[0] {
 	default:
-		command = &Command{
-			Args: []string{},
-		}
-	case SimpleString:
-		command = &Command{
-			Args: []string{line[1:]},
-		}
-	case BulkString:
-		formattedString, err := parseBulkString(reader)
+		command.Args = []string{}
 
+	case SimpleString:
+		command.Args = []string{line[1:]}
+
+	case BulkString:
+		formattedString, bytes, err := parseBulkString(reader)
 		if err != nil {
 			return nil, err
 		}
-		command = &Command{
-			Args: []string{formattedString},
-			Size: 1,
-		}
+
+		command.Args = []string{formattedString}
+		command.Size += bytes
 
 	case Arrays:
-		args, size, err := parseArray(reader, line)
+		args, bytes, err := parseArray(reader, line)
 		if err != nil {
 			return nil, err
 		}
-		command = &Command{
-			Args: args,
-			Size: uint(size),
-		}
+
+		command.Args = args
+		command.Size += bytes
 	}
 
 	return command, nil
 }
 
-func parseBulkString(reader *bufio.Reader) (string, error) {
+func parseBulkString(reader *bufio.Reader) (string, int, error) {
 	line, err := reader.ReadString('\n')
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
+	bytes := len([]byte(line))
 	line = strings.TrimSpace(line)
 
 	size := 0
 	fmt.Sscanf(line, "$%d", &size)
 	data := make([]byte, size+2)
 
-	_, err = io.ReadFull(reader, data)
+	commandBytes, err := io.ReadFull(reader, data)
+	bytes += commandBytes
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
-	return string(data[:size]), nil
+	return string(data[:size]), bytes, nil
 }
 
 func parseArray(reader *bufio.Reader, line string) ([]string, int, error) {
@@ -104,13 +105,15 @@ func parseArray(reader *bufio.Reader, line string) ([]string, int, error) {
 	}
 
 	arrayArgs := make([]string, size)
+	totalBytes := 0
 	for i := 0; i < size; i++ {
-		arg, err := parseBulkString(reader)
+		arg, bytes, err := parseBulkString(reader)
 		if err != nil {
 			return nil, 0, err
 		}
+		totalBytes += bytes
 		arrayArgs[i] = arg
 	}
 
-	return arrayArgs, size, nil
+	return arrayArgs, totalBytes, nil
 }

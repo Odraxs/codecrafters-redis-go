@@ -12,8 +12,8 @@ import (
 )
 
 func handlePing(h *Handler, _ *command.Command) error {
-	pingMsg := []byte(command.Pong)
-	h.writer.Write(pingMsg)
+	pingMsg := command.Pong
+	h.WriteResponse(pingMsg)
 	return nil
 }
 
@@ -23,7 +23,7 @@ func handleEcho(h *Handler, userCommand *command.Command) error {
 	}
 
 	arg := userCommand.Args[1]
-	h.writer.WriteString(command.NewBulkString(arg))
+	h.WriteResponse(command.NewBulkString(arg))
 	return nil
 }
 
@@ -76,8 +76,8 @@ func handleSet(h *Handler, userCommand *command.Command) error {
 			go slave.PropagateCommand(userCommand.Args, &wg)
 		}
 		wg.Wait()
-		h.writer.WriteString(command.Ok)
 	}
+	h.WriteResponse(command.Ok)
 
 	return nil
 }
@@ -102,8 +102,27 @@ func handleInfo(h *Handler, userCommand *command.Command) error {
 	return nil
 }
 
-func handleReplconf(h *Handler, _ *command.Command) error {
-	h.writer.WriteString(command.Ok)
+func handleReplconf(h *Handler, userCommand *command.Command) error {
+	confOf := strings.ToLower(userCommand.Args[1])
+	switch confOf {
+	default:
+		h.WriteResponse(command.Ok)
+	case command.GetAck:
+		if h.cfg.Role() == config.RoleMaster {
+			info := strings.ToUpper(strings.Join(userCommand.Args, " "))
+			return fmt.Errorf("the %s command is only available for salves", info)
+		}
+
+		offSet := strconv.Itoa(h.cfg.ReplOffset())
+		response := command.NewArray([]string{
+			userCommand.Args[0],
+			strings.ToUpper(command.Ack),
+			offSet,
+		},
+		)
+		h.writer.WriteString(response)
+	}
+
 	return nil
 }
 
@@ -118,7 +137,7 @@ func handlePsync(h *Handler, _ *command.Command) error {
 	if err != nil {
 		return fmt.Errorf("failed to read rdb file, error: %w", err)
 	}
-	h.writer.WriteString(command.NewRDBFile(dbData))
+	h.WriteResponse(command.NewRDBFile(dbData))
 
 	slave := config.NewSlave(h.connection)
 	h.cfg.AddSlave(slave)

@@ -74,6 +74,10 @@ func (c *Config) AddSlave(slave *Slave) {
 	c.slaves = append(c.slaves, slave)
 }
 
+func (c *Config) UpdateOffset(bytes int) {
+	c.replOffset += bytes
+}
+
 func WithPort(port string) Option {
 	return func(c *Config) {
 		c.port = port

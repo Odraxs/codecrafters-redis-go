@@ -52,6 +52,8 @@ func (h *Handler) HandleClient() error {
 		if err != nil {
 			return fmt.Errorf("error: %w", err)
 		}
+		// Check if this should only be update for slaves in the tests
+		h.cfg.UpdateOffset(userCommand.Size)
 
 		h.writer.Flush()
 	}
@@ -110,6 +112,14 @@ func (h *Handler) Handshake() error {
 	}
 
 	return nil
+}
+
+// Writes responses to commands send to the master server.
+// Slaves only give responses to `REPLCONF GETACK` commands
+func (h *Handler) WriteResponse(msg string) {
+	if h.cfg.Role() == config.RoleMaster {
+		h.writer.WriteString(msg)
+	}
 }
 
 func (h *Handler) handleCommand(userCommand *command.Command) error {
