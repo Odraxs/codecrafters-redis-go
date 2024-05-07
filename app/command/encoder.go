@@ -9,6 +9,10 @@ const (
 	Fullsync = "FULLRESYNC"
 )
 
+func NewInteger(number int) string {
+	return fmt.Sprintf(":%d\r\n", number)
+}
+
 func NewString(data string) string {
 	return fmt.Sprintf("+%s\r\n", data)
 }

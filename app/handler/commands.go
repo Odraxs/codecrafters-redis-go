@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/codecrafters-io/redis-starter-go/app/command"
 	"github.com/codecrafters-io/redis-starter-go/app/server/config"
@@ -141,5 +142,35 @@ func handlePsync(h *Handler, _ *command.Command) error {
 
 	slave := config.NewSlave(h.connection)
 	h.cfg.AddSlave(slave)
+	return nil
+}
+
+func handleWait(h *Handler, userCommand *command.Command) error {
+	if h.cfg.Role() != config.RoleMaster {
+		return fmt.Errorf(
+			"the %s command is only allowed for %s servers",
+			strings.ToUpper(userCommand.Args[0]),
+			strings.ToUpper(config.RoleMaster),
+		)
+	}
+	if len(userCommand.Args) != 3 {
+		return fmt.Errorf("the number of argument for %s is incorrect", userCommand.Args[0])
+	}
+
+	numReplicas, err := strconv.Atoi(userCommand.Args[1])
+	if err != nil {
+		return err
+	}
+	if numReplicas == 0 {
+		h.WriteResponse(command.NewInteger(0))
+		return nil
+	}
+
+	waitTime, err := strconv.Atoi(userCommand.Args[2])
+	if err != nil {
+		return err
+	}
+
+	time.Sleep(time.Duration(time.Duration(waitTime).Milliseconds()))
 	return nil
 }

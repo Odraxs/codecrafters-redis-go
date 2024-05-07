@@ -27,6 +27,7 @@ var commandHandlers = map[string]func(*Handler, *command.Command) error{
 	command.Info:     handleInfo,
 	command.Replconf: handleReplconf,
 	command.Psync:    handlePsync,
+	command.Wait:     handleWait,
 }
 
 func NewHandler(conn net.Conn, db *storage.Storage, cfg *config.Config) *Handler {

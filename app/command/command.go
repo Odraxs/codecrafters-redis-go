@@ -15,13 +15,14 @@ const (
 	Info     = "info"
 	Replconf = "replconf"
 	Psync    = "psync"
-	Px       = "px"
+	Wait     = "wait"
 )
 
 const (
 	Replication = "replication"
 	GetAck      = "getack"
 	Ack         = "ack"
+	Px          = "px"
 )
 
 const (
