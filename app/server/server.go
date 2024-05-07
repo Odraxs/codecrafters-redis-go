@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
 
 	"github.com/codecrafters-io/redis-starter-go/app/handler"
 	"github.com/codecrafters-io/redis-starter-go/app/server/config"
@@ -29,6 +30,8 @@ func (s *Server) Start() error {
 	}
 	defer l.Close()
 
+	acksChan := make(chan int, 10)
+	locker := &sync.RWMutex{}
 	// Waiting for a connection
 	for {
 		conn, err := l.Accept()
@@ -37,7 +40,7 @@ func (s *Server) Start() error {
 			continue
 		}
 
-		connHandler := handler.NewHandler(conn, s.db, s.cfg)
+		connHandler := handler.NewHandler(conn, s.db, s.cfg, acksChan, locker)
 
 		go s.serveConnection(connHandler)
 	}
@@ -49,7 +52,8 @@ func (s *Server) Handshake() error {
 		return fmt.Errorf("failed to dial with master error: %w", err)
 	}
 
-	connHandler := handler.NewHandler(conn, s.db, s.cfg)
+	acksChan := make(chan int, 10)
+	connHandler := handler.NewHandler(conn, s.db, s.cfg, acksChan, &sync.RWMutex{})
 	if err := connHandler.Handshake(); err != nil {
 		return fmt.Errorf("failed to handshake, error: %w", err)
 	}

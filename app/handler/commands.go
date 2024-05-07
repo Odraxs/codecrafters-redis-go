@@ -71,12 +71,14 @@ func handleSet(h *Handler, userCommand *command.Command) error {
 
 	h.db.Set(key, value, expTime)
 	if h.cfg.Role() == config.RoleMaster {
-		wg := sync.WaitGroup{}
+		wg := &sync.WaitGroup{}
+		command := command.NewArray(userCommand.Args)
 		for _, slave := range h.cfg.Slaves() {
 			wg.Add(1)
-			go slave.PropagateCommand(userCommand.Args, &wg)
+			go slave.PropagateCommand(command, wg)
 		}
 		wg.Wait()
+		h.UpdaterSlavesOffset(len([]byte(command)))
 	}
 	h.WriteResponse(command.Ok)
 
@@ -122,6 +124,15 @@ func handleReplconf(h *Handler, userCommand *command.Command) error {
 		},
 		)
 		h.writer.WriteString(response)
+	case command.Ack:
+		if h.cfg.Role() == config.RoleSlave {
+			info := strings.ToUpper(strings.Join(userCommand.Args, " "))
+			return fmt.Errorf("the %s command is only available for master", info)
+		}
+
+		// Probably needed for validations latter
+		//offSet, _ := strconv.Atoi(userCommand.Args[2])
+		h.IncrementAckSlaves()
 	}
 
 	return nil
@@ -171,6 +182,28 @@ func handleWait(h *Handler, userCommand *command.Command) error {
 		return err
 	}
 
-	time.Sleep(time.Duration(time.Duration(waitTime).Milliseconds()))
-	return nil
+	h.SetAckSlaves(0)
+	h.sendGetAckToSlaves()
+
+	for {
+		select {
+		case ackSlaves := <-h.acksChan:
+			// Cheating to prevent race conditions
+			// probably should look for a way to manage multiple REPLCONF ACK responses
+			if ackSlaves > h.AckSlaves() {
+				h.SetAckSlaves(ackSlaves)
+			}
+			if ackSlaves >= numReplicas {
+				h.WriteResponse(command.NewInteger(ackSlaves))
+				return nil
+			}
+		case <-time.After(time.Duration(waitTime) * time.Millisecond):
+			if h.AckSlaves() > 0 {
+				h.WriteResponse(command.NewInteger(h.AckSlaves()))
+			} else {
+				h.WriteResponse(command.NewInteger(len(h.cfg.Slaves())))
+			}
+			return nil
+		}
+	}
 }

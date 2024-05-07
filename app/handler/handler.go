@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 
 	"github.com/codecrafters-io/redis-starter-go/app/command"
 	"github.com/codecrafters-io/redis-starter-go/app/server/config"
@@ -12,11 +13,15 @@ import (
 )
 
 type Handler struct {
-	db         *storage.Storage
-	connection net.Conn
-	cfg        *config.Config
-	reader     *bufio.Reader
-	writer     *bufio.Writer
+	db           *storage.Storage
+	connection   net.Conn
+	cfg          *config.Config
+	reader       *bufio.Reader
+	writer       *bufio.Writer
+	slavesOffset int
+	ackSlaves    int
+	acksLock     *sync.RWMutex
+	acksChan     chan int
 }
 
 var commandHandlers = map[string]func(*Handler, *command.Command) error{
@@ -30,13 +35,17 @@ var commandHandlers = map[string]func(*Handler, *command.Command) error{
 	command.Wait:     handleWait,
 }
 
-func NewHandler(conn net.Conn, db *storage.Storage, cfg *config.Config) *Handler {
+func NewHandler(conn net.Conn, db *storage.Storage, cfg *config.Config, acksChan chan int, locker *sync.RWMutex) *Handler {
 	return &Handler{
-		db:         db,
-		connection: conn,
-		cfg:        cfg,
-		reader:     bufio.NewReader(conn),
-		writer:     bufio.NewWriter(conn),
+		db:           db,
+		connection:   conn,
+		cfg:          cfg,
+		reader:       bufio.NewReader(conn),
+		writer:       bufio.NewWriter(conn),
+		slavesOffset: 0,
+		ackSlaves:    0,
+		acksLock:     locker,
+		acksChan:     acksChan,
 	}
 }
 
@@ -55,7 +64,6 @@ func (h *Handler) HandleClient() error {
 		}
 		// Check if this should only be update for slaves in the tests
 		h.cfg.UpdateOffset(userCommand.Size)
-
 		h.writer.Flush()
 	}
 }
@@ -123,6 +131,29 @@ func (h *Handler) WriteResponse(msg string) {
 	}
 }
 
+func (h *Handler) UpdaterSlavesOffset(commandBytes int) {
+	h.slavesOffset += commandBytes
+}
+
+func (h *Handler) AckSlaves() int {
+	h.acksLock.RLock()
+	defer h.acksLock.RUnlock()
+	return h.ackSlaves
+}
+
+func (h *Handler) IncrementAckSlaves() {
+	h.acksLock.Lock()
+	h.ackSlaves++
+	h.acksLock.Unlock()
+	h.acksChan <- h.ackSlaves
+}
+
+func (h *Handler) SetAckSlaves(val int) {
+	h.acksLock.Lock()
+	h.ackSlaves = val
+	h.acksLock.Unlock()
+}
+
 func (h *Handler) handleCommand(userCommand *command.Command) error {
 	instruction := strings.ToLower(userCommand.Args[0])
 	handler, exist := commandHandlers[instruction]
@@ -130,4 +161,15 @@ func (h *Handler) handleCommand(userCommand *command.Command) error {
 		return fmt.Errorf("unknown command: %s", strings.ToUpper(instruction))
 	}
 	return handler(h, userCommand)
+}
+
+func (h *Handler) sendGetAckToSlaves() {
+	wg := &sync.WaitGroup{}
+	command := command.NewArray([]string{"REPLCONF", "GETACK", "*"})
+	for _, slave := range h.cfg.Slaves() {
+		wg.Add(1)
+		go slave.PropagateCommand(command, wg)
+	}
+	wg.Wait()
+	h.UpdaterSlavesOffset(len([]byte(command)))
 }

@@ -4,13 +4,11 @@ import (
 	"bufio"
 	"net"
 	"sync"
-
-	"github.com/codecrafters-io/redis-starter-go/app/command"
 )
 
 type Slave struct {
-	conn net.Conn
-	lock *sync.Mutex
+	conn  net.Conn
+	lock  *sync.Mutex
 }
 
 func NewSlave(conn net.Conn) *Slave {
@@ -20,9 +18,8 @@ func NewSlave(conn net.Conn) *Slave {
 	}
 }
 
-func (sl *Slave) PropagateCommand(args []string, wg *sync.WaitGroup) {
+func (sl *Slave) PropagateCommand(command string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	command := command.NewArray(args)
 
 	sl.lock.Lock()
 	writer := bufio.NewWriter(sl.conn)
