@@ -105,6 +105,27 @@ func handleInfo(h *Handler, userCommand *command.Command) error {
 	return nil
 }
 
+func handleConfig(h *Handler, userCommand *command.Command) error {
+	config := strings.ToLower(userCommand.Args[1])
+	switch config {
+	default:
+		return fmt.Errorf("%s is an invalid argument", strings.ToUpper(config))
+	case command.Get:
+		for _, arg := range userCommand.Args[2:] {
+			configOf := strings.ToLower(arg)
+			if configOf == command.Dir {
+				dir := h.cfg.Dir()
+				h.WriteResponse(command.NewArray([]string{configOf, dir}))
+			}
+			if configOf == command.DBfilename {
+				fileName := h.cfg.RDBFileName()
+				h.WriteResponse(command.NewArray([]string{configOf, fileName}))
+			}
+		}
+	}
+	return nil
+}
+
 func handleReplconf(h *Handler, userCommand *command.Command) error {
 	confOf := strings.ToLower(userCommand.Args[1])
 	switch confOf {

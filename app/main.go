@@ -13,8 +13,10 @@ import (
 )
 
 var (
-	portMatch    = regexp.MustCompile(`--port\s+\d+`)
-	replicaMatch = regexp.MustCompile(`--replicaof\s+.+\s\d+`)
+	portMatch        = regexp.MustCompile(`--port\s+\d+`)
+	replicaMatch     = regexp.MustCompile(`--replicaof\s+.+\s\d+`)
+	rdbFileDirMatch  = regexp.MustCompile(`--dir\s+[^\s]+`)
+	rdbFileNameMatch = regexp.MustCompile(`--dbfilename\s+[^\s]+`)
 )
 
 func main() {
@@ -53,6 +55,16 @@ func setServerOptions() []config.Option {
 		data := strings.Split(params[0], " ")[1:]
 		master := fmt.Sprintf("%s:%s", data[0], data[1])
 		options = append(options, config.WithSlave(master))
+	}
+
+	if params := rdbFileDirMatch.FindStringSubmatch(cmdOptions); len(params) == 1 {
+		rdbFileDir := strings.Split(params[0], " ")[1]
+		options = append(options, config.WithDir(rdbFileDir))
+	}
+
+	if params := rdbFileNameMatch.FindStringSubmatch(cmdOptions); len(params) == 1 {
+		rdbFileName := strings.Split(params[0], " ")[1]
+		options = append(options, config.WithRDBFileName(rdbFileName))
 	}
 
 	return options

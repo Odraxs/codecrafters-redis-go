@@ -6,9 +6,11 @@ import (
 )
 
 const (
-	charset     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	replIDSize  = 40
-	defaultPort = "6379"
+	charset        = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	replIDSize     = 40
+	defaultPort    = "6379"
+	defaultDir     = "/tmp/redis-files"
+	defaultRDBFile = "db.rdb"
 )
 
 const (
@@ -20,23 +22,27 @@ var seededRand *rand.Rand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
 type Config struct {
-	port       string
-	role       string
-	replicaOf  string
-	replID     string
-	replOffset int
-	slaves     []*Slave
+	port        string
+	role        string
+	replicaOf   string
+	replID      string
+	replOffset  int
+	slaves      []*Slave
+	dir         string
+	rdbFileName string
 }
 
 type Option func(c *Config)
 
 func NewConfig(options ...Option) *Config {
 	config := &Config{
-		port:       defaultPort,
-		role:       RoleMaster,
-		replID:     generateReplicationID(),
-		replOffset: 0,
-		slaves:     []*Slave{},
+		port:        defaultPort,
+		role:        RoleMaster,
+		replID:      generateReplicationID(),
+		replOffset:  0,
+		slaves:      []*Slave{},
+		dir:         defaultDir,
+		rdbFileName: defaultRDBFile,
 	}
 
 	for _, opt := range options {
@@ -66,6 +72,14 @@ func (c *Config) ReplicaOf() string {
 	return c.replicaOf
 }
 
+func (c *Config) Dir() string {
+	return c.dir
+}
+
+func (c *Config) RDBFileName() string {
+	return c.rdbFileName
+}
+
 func (c *Config) Slaves() []*Slave {
 	return c.slaves
 }
@@ -88,6 +102,18 @@ func WithSlave(master string) Option {
 	return func(c *Config) {
 		c.role = RoleSlave
 		c.replicaOf = master
+	}
+}
+
+func WithDir(dir string) Option {
+	return func(c *Config) {
+		c.dir = dir
+	}
+}
+
+func WithRDBFileName(fileName string) Option {
+	return func(c *Config) {
+		c.rdbFileName = fileName
 	}
 }
 

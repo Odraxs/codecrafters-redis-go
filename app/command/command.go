@@ -16,6 +16,7 @@ const (
 	Replconf = "replconf"
 	Psync    = "psync"
 	Wait     = "wait"
+	Config   = "config"
 )
 
 const (
@@ -23,6 +24,8 @@ const (
 	GetAck      = "getack"
 	Ack         = "ack"
 	Px          = "px"
+	Dir         = "dir"
+	DBfilename  = "dbfilename"
 )
 
 const (
