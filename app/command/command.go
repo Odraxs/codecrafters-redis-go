@@ -17,6 +17,7 @@ const (
 	Psync    = "psync"
 	Wait     = "wait"
 	Config   = "config"
+	Keys     = "keys"
 )
 
 const (

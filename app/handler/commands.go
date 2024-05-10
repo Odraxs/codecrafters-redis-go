@@ -126,6 +126,16 @@ func handleConfig(h *Handler, userCommand *command.Command) error {
 	return nil
 }
 
+func handleKeys(h *Handler, userCommand *command.Command) error {
+	if len(userCommand.Args) > 3 {
+		return fmt.Errorf("invalid arguments for the %s command", strings.ToUpper(command.Keys))
+	}
+
+	keys := h.db.GetKeys()
+	h.WriteResponse(command.NewArray(keys))
+	return nil
+}
+
 func handleReplconf(h *Handler, userCommand *command.Command) error {
 	confOf := strings.ToLower(userCommand.Args[1])
 	switch confOf {
@@ -166,7 +176,7 @@ func handlePsync(h *Handler, _ *command.Command) error {
 		),
 	)
 
-	dbData, err := rdb.GetRDBContent()
+	dbData, err := rdb.GetEmptyRDBContent()
 	if err != nil {
 		return fmt.Errorf("failed to read rdb file, error: %w", err)
 	}

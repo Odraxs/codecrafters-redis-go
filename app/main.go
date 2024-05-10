@@ -26,6 +26,13 @@ func main() {
 
 	cfg := config.NewConfig(cmdOptions...)
 	db := storage.NewStorage()
+
+	log.Println("searching for rdb file to load data...")
+	err := db.ReadRDBFile(cfg.RDBFilePath())
+	if err != nil {
+		log.Printf("Error: %s\n failed to read rdb file, starting the server with empty data...\n", err.Error())
+	}
+
 	server := server.NewServer(cfg, db)
 
 	if cfg.Role() == config.RoleSlave {

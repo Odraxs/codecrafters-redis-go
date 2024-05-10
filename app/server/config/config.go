@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -10,7 +11,7 @@ const (
 	replIDSize     = 40
 	defaultPort    = "6379"
 	defaultDir     = "/tmp/redis-files"
-	defaultRDBFile = "db.rdb"
+	defaultRDBFile = "dump.rdb"
 )
 
 const (
@@ -90,6 +91,10 @@ func (c *Config) AddSlave(slave *Slave) {
 
 func (c *Config) UpdateOffset(bytes int) {
 	c.replOffset += bytes
+}
+
+func (c *Config) RDBFilePath() string {
+	return fmt.Sprintf("%s/%s", c.dir, c.rdbFileName)
 }
 
 func WithPort(port string) Option {

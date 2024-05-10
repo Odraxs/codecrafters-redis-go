@@ -34,6 +34,7 @@ var commandHandlers = map[string]func(*Handler, *command.Command) error{
 	command.Psync:    handlePsync,
 	command.Wait:     handleWait,
 	command.Config:   handleConfig,
+	command.Keys:     handleKeys,
 }
 
 func NewHandler(conn net.Conn, db *storage.Storage, cfg *config.Config, acksChan chan int, locker *sync.RWMutex) *Handler {
